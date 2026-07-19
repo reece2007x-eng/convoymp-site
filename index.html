@@ -8,7 +8,9 @@
     <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-auth-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-database-compat.js"></script>
     <script src="script.js"></script>
+    <script src="multiplayer.js"></script>
 </head>
 <body>
 
@@ -22,6 +24,7 @@
             <a onclick="showPage('home')" class="active" id="nav-home">Home</a>
             <a onclick="showPage('news')" id="nav-news">News</a>
             <a onclick="showPage('servers')" id="nav-servers">Servers</a>
+            <a onclick="showPage('game')" id="nav-game" style="display:none;">Game Panel</a>
             <a onclick="showPage('players')" id="nav-players">Players</a>
             <a onclick="showPage('community')" id="nav-community">Community</a>
 
@@ -176,6 +179,104 @@
             <p style="color:#606070; font-size:0.8rem; margin-top:8px;">AI moderation filters inappropriate content.</p>
         </div>
     </section>
+</div>
+
+<!-- ===== GAME PANEL (MULTIPLAYER) ===== -->
+<div class="page" id="page-game">
+    <div class="game-panel">
+        <!-- Connection Bar -->
+        <div class="game-connection-bar">
+            <div class="game-conn-left">
+                <span class="game-status-dot" id="game-status-dot"></span>
+                <span id="game-status-text">Disconnected</span>
+                <select id="game-server-select" class="game-select">
+                    <option value="eu1">Europe 1 - Frankfurt</option>
+                    <option value="eu2">Europe 2 - Amsterdam</option>
+                    <option value="uk1">UK 1 - London</option>
+                    <option value="us1">US East 1 - New York</option>
+                    <option value="us2">US West 1 - Los Angeles</option>
+                </select>
+                <button class="btn-primary game-btn" id="btn-game-connect" onclick="gameConnect()">Connect</button>
+            </div>
+            <div class="game-conn-right">
+                <span class="game-player-count-bar">Players: <strong id="game-player-count">0</strong></span>
+            </div>
+        </div>
+
+        <div class="game-layout">
+            <!-- Left: Map + Players -->
+            <div class="game-left">
+                <!-- Map -->
+                <div class="game-map-container">
+                    <div class="game-map-header">
+                        <h3>Map</h3>
+                        <div class="game-map-controls">
+                            <button onclick="gameMapZoom(1)" title="Zoom in">+</button>
+                            <button onclick="gameMapZoom(-1)" title="Zoom out">-</button>
+                            <button onclick="gameMapCenter()" title="Center on you">&#8982;</button>
+                        </div>
+                    </div>
+                    <canvas id="game-map-canvas" width="800" height="500"></canvas>
+                </div>
+
+                <!-- Nearby Players -->
+                <div class="card game-nearby-card">
+                    <h3>Nearby Players</h3>
+                    <div id="game-nearby-list" class="game-player-list">
+                        <p style="color:#606070;">Connect to a server to see nearby players.</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Right: Chat + Convoys -->
+            <div class="game-right">
+                <!-- Chat -->
+                <div class="card game-chat-card">
+                    <div class="game-chat-header">
+                        <h3>Server Chat</h3>
+                        <div class="game-chat-tabs">
+                            <button class="game-chat-tab active" onclick="gameSwitchChat('global', this)">Global</button>
+                            <button class="game-chat-tab" onclick="gameSwitchChat('convoy', this)">Convoy</button>
+                        </div>
+                    </div>
+                    <div id="game-chat-messages" class="game-chat-messages">
+                        <p style="color:#606070; text-align:center; padding:20px;">Connect to a server to start chatting.</p>
+                    </div>
+                    <div class="game-chat-input-row">
+                        <input type="text" id="game-chat-input" placeholder="Type a message..." maxlength="500">
+                        <button class="btn-primary game-btn" onclick="gameSendChat()">Send</button>
+                    </div>
+                </div>
+
+                <!-- Convoy -->
+                <div class="card game-convoy-card">
+                    <h3>Convoy</h3>
+                    <div id="game-convoy-content">
+                        <p style="color:#606070;">You are not in a convoy.</p>
+                        <div style="margin-top:12px;">
+                            <input type="text" id="game-convoy-name" placeholder="Convoy name..." style="width:100%; padding:8px 12px; background:#1a1a2e; border:1px solid #0f3460; border-radius:4px; color:#e0e0e0; margin-bottom:8px;">
+                            <button class="btn-primary game-btn" onclick="gameCreateConvoy()" style="width:100%;">Create Convoy</button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Player Position -->
+                <div class="card game-pos-card">
+                    <h3>Your Position</h3>
+                    <div class="game-pos-grid">
+                        <div class="game-pos-item"><label>X</label><span id="game-pos-x">0.0</span></div>
+                        <div class="game-pos-item"><label>Y</label><span id="game-pos-y">0.0</span></div>
+                        <div class="game-pos-item"><label>Z</label><span id="game-pos-z">0.0</span></div>
+                        <div class="game-pos-item"><label>Speed</label><span id="game-pos-speed">0 km/h</span></div>
+                        <div class="game-pos-item"><label>Heading</label><span id="game-pos-heading">0&deg;</span></div>
+                    </div>
+                    <div style="margin-top:12px; font-size:0.8rem; color:#606070;">
+                        Position is updated by the ETS2 companion (coming soon).
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
 </div>
 
 

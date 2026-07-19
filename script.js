@@ -19,6 +19,15 @@ var currentUser = null;
 var currentUserProfile = null;
 var chatUnsubscribe = null;
 var firstUserChecked = false;
+var mpConnected = false;
+var mpChatChannel = 'global';
+var mpConvoyId = null;
+var mpMapZoom = 1;
+var mpMapCenterX = 0;
+var mpMapCenterZ = 0;
+var mpMapDragging = false;
+var mpMapLastX = 0;
+var mpMapLastZ = 0;
 
 // ===== AI MODERATION =====
 var bannedWords = [
@@ -83,6 +92,13 @@ document.addEventListener('DOMContentLoaded', function() {
     });
     document.getElementById('btn-emoji').addEventListener('click', toggleEmojiPicker);
 
+    var gameChatInput = document.getElementById('game-chat-input');
+    if (gameChatInput) {
+        gameChatInput.addEventListener('keypress', function(e) {
+            if (e.key === 'Enter') gameSendChat();
+        });
+    }
+
 
     document.getElementById('btn-search-player').addEventListener('click', function() {
         searchPlayers();
@@ -92,6 +108,16 @@ document.addEventListener('DOMContentLoaded', function() {
     });
 
     loadHomeStats();
+
+    if (typeof MP !== 'undefined') {
+        MP.init();
+        MP.startCleanup();
+        setupMultiplayerEvents();
+    }
+
+    window.addEventListener('resize', function() {
+        if (mpConnected) gameDrawMap();
+    });
 });
 
 
@@ -213,47 +239,11 @@ function loginWithGoogle() {
 }
 
 function logoutUser() {
+    if (mpConnected) MP.disconnect();
     auth.signOut().then(function() {
         showPage('home');
     });
 }
-
-function updateNavForAuth(user) {
-    var loginBtn = document.getElementById('btn-nav-login');
-    var registerBtn = document.getElementById('btn-nav-register');
-    var accountBtn = document.getElementById('nav-account-btn');
-    var adminBtn = document.getElementById('nav-admin-btn');
-    var logoutBtn = document.getElementById('btn-nav-logout');
-    var heroBtn = document.getElementById('hero-main-btn');
-    var navUsername = document.getElementById('nav-username');
-
-    if (user) {
-        if (loginBtn) loginBtn.style.display = 'none';
-        if (registerBtn) registerBtn.style.display = 'none';
-        if (accountBtn) accountBtn.style.display = 'inline-block';
-        if (logoutBtn) logoutBtn.style.display = 'inline-block';
-        if (heroBtn) {
-            heroBtn.textContent = 'Go to Dashboard';
-            heroBtn.setAttribute('onclick', "showPage('account')");
-        }
-        if (navUsername && currentUserProfile) {
-            navUsername.textContent = currentUserProfile.username;
-            navUsername.style.display = 'inline-block';
-        }
-    } else {
-        if (loginBtn) loginBtn.style.display = 'inline-block';
-        if (registerBtn) registerBtn.style.display = 'inline-block';
-        if (accountBtn) accountBtn.style.display = 'none';
-        if (adminBtn) adminBtn.style.display = 'none';
-        if (logoutBtn) logoutBtn.style.display = 'none';
-        if (navUsername) navUsername.style.display = 'none';
-        if (heroBtn) {
-            heroBtn.textContent = 'Register Now';
-            heroBtn.setAttribute('onclick', "showPage('register')");
-        }
-    }
-}
-
 
 // ==========================================
 // USER PROFILE
@@ -896,7 +886,8 @@ var navHighlightMap = {
     'admin-users': 'nav-admin-btn',
     'admin-reports': 'nav-admin-btn',
     'admin-appeals': 'nav-admin-btn',
-    'admin-logs': 'nav-admin-btn'
+    'admin-logs': 'nav-admin-btn',
+    'game': 'nav-game'
 };
 
 function showPage(page) {
@@ -928,6 +919,7 @@ function showPage(page) {
     if (page === 'admin-appeals') loadAdminAppeals();
     if (page === 'community') startChatListener();
     else stopChatListener();
+    if (page === 'game' && mpConnected) gameDrawMap();
 }
 
 function toggleNav() {
@@ -968,4 +960,484 @@ function formatDate(ts) {
     if (ts.seconds) return new Date(ts.seconds * 1000).toLocaleDateString();
     if (ts.toDate) return ts.toDate().toLocaleDateString();
     return '';
+}
+
+
+// ==========================================
+// MULTIPLAYER / GAME PANEL
+// ==========================================
+
+function setupMultiplayerEvents() {
+    MP.on('connected', function(data) {
+        mpConnected = true;
+        var dot = document.getElementById('game-status-dot');
+        var text = document.getElementById('game-status-text');
+        var btn = document.getElementById('btn-game-connect');
+        if (dot) dot.classList.add('connected');
+        if (text) text.textContent = 'Connected to ' + MP.SERVERS[data.serverId].name;
+        if (btn) { btn.textContent = 'Disconnect'; btn.classList.add('connected'); btn.classList.remove('disconnected'); }
+        addGameChatSystem('Connected to ' + MP.SERVERS[data.serverId].name);
+        gameUpdatePlayerCount();
+        initGameMap();
+    });
+
+    MP.on('disconnected', function() {
+        mpConnected = false;
+        var dot = document.getElementById('game-status-dot');
+        var text = document.getElementById('game-status-text');
+        var btn = document.getElementById('btn-game-connect');
+        if (dot) dot.classList.remove('connected');
+        if (text) text.textContent = 'Disconnected';
+        if (btn) { btn.textContent = 'Connect'; btn.classList.remove('connected'); btn.classList.add('disconnected'); }
+        document.getElementById('game-nearby-list').innerHTML = '<p style="color:#606070;">Connect to a server to see nearby players.</p>';
+        document.getElementById('game-player-count').textContent = '0';
+        document.getElementById('game-chat-messages').innerHTML = '<p style="color:#606070; text-align:center; padding:20px;">Connect to a server to start chatting.</p>';
+    });
+
+    MP.on('player_joined', function(p) {
+        addGameChatSystem(p.username + ' joined the server');
+        gameUpdateNearbyPlayers();
+        gameUpdatePlayerCount();
+    });
+
+    MP.on('player_left', function(data) {
+        addGameChatSystem('A player left the server');
+        gameUpdateNearbyPlayers();
+        gameUpdatePlayerCount();
+    });
+
+    MP.on('player_update', function(p) {
+        gameUpdateNearbyPlayers();
+        gameDrawMap();
+    });
+
+    MP.on('chat_message', function(msg) {
+        addGameChatMessage(msg);
+    });
+
+    MP.on('convoy_created', function(data) {
+        mpConvoyId = data.id;
+        gameUpdateConvoyPanel(data);
+        addGameChatSystem('Convoy created: ' + data.name);
+    });
+
+    MP.on('convoy_update', function(data) {
+        gameUpdateConvoyPanel(data);
+    });
+
+    MP.on('convoy_left', function() {
+        mpConvoyId = null;
+        document.getElementById('game-convoy-content').innerHTML =
+            '<p style="color:#606070;">You are not in a convoy.</p>' +
+            '<div style="margin-top:12px;">' +
+            '<input type="text" id="game-convoy-name" placeholder="Convoy name..." style="width:100%; padding:8px 12px; background:#1a1a2e; border:1px solid #0f3460; border-radius:4px; color:#e0e0e0; margin-bottom:8px;">' +
+            '<button class="btn-primary game-btn" onclick="gameCreateConvoy()" style="width:100%;">Create Convoy</button></div>';
+        addGameChatSystem('You left the convoy');
+    });
+
+    MP.on('convoy_joined', function(data) {
+        mpConvoyId = data.id;
+        gameUpdateConvoyPanel(data);
+        addGameChatSystem('You joined convoy: ' + data.name);
+    });
+}
+
+function updateNavForAuth(user) {
+    var loginBtn = document.getElementById('btn-nav-login');
+    var registerBtn = document.getElementById('btn-nav-register');
+    var accountBtn = document.getElementById('nav-account-btn');
+    var adminBtn = document.getElementById('nav-admin-btn');
+    var logoutBtn = document.getElementById('btn-nav-logout');
+    var heroBtn = document.getElementById('hero-main-btn');
+    var navUsername = document.getElementById('nav-username');
+    var gameBtn = document.getElementById('nav-game');
+
+    if (user) {
+        if (loginBtn) loginBtn.style.display = 'none';
+        if (registerBtn) registerBtn.style.display = 'none';
+        if (accountBtn) accountBtn.style.display = 'inline-block';
+        if (logoutBtn) logoutBtn.style.display = 'inline-block';
+        if (gameBtn) gameBtn.style.display = 'inline-block';
+        if (heroBtn) {
+            heroBtn.textContent = 'Go to Dashboard';
+            heroBtn.setAttribute('onclick', "showPage('account')");
+        }
+        if (navUsername && currentUserProfile) {
+            navUsername.textContent = currentUserProfile.username;
+            navUsername.style.display = 'inline-block';
+        }
+    } else {
+        if (loginBtn) loginBtn.style.display = 'inline-block';
+        if (registerBtn) registerBtn.style.display = 'inline-block';
+        if (accountBtn) accountBtn.style.display = 'none';
+        if (adminBtn) adminBtn.style.display = 'none';
+        if (logoutBtn) logoutBtn.style.display = 'none';
+        if (gameBtn) gameBtn.style.display = 'none';
+        if (navUsername) navUsername.style.display = 'none';
+        if (heroBtn) {
+            heroBtn.textContent = 'Register Now';
+            heroBtn.setAttribute('onclick', "showPage('register')");
+        }
+    }
+}
+
+// ==========================================
+// GAME PANEL FUNCTIONS
+// ==========================================
+
+function gameConnect() {
+    if (!currentUser || !currentUserProfile) {
+        showPage('login');
+        return;
+    }
+
+    if (mpConnected) {
+        MP.disconnect();
+        return;
+    }
+
+    var serverId = document.getElementById('game-server-select').value;
+    MP.connect(serverId, {
+        uid: currentUser.uid,
+        username: currentUserProfile.username,
+        convoyId: currentUserProfile.convoyId
+    });
+}
+
+function gameDisconnect() {
+    MP.disconnect();
+}
+
+function gameSendChat() {
+    if (!mpConnected) return;
+    var input = document.getElementById('game-chat-input');
+    if (!input) return;
+    var text = input.value.trim();
+    if (!text) return;
+
+    MP.sendChat(text, mpChatChannel);
+    input.value = '';
+}
+
+function gameSwitchChat(channel, btn) {
+    mpChatChannel = channel;
+    var tabs = document.querySelectorAll('.game-chat-tab');
+    for (var i = 0; i < tabs.length; i++) tabs[i].classList.remove('active');
+    if (btn) btn.classList.add('active');
+
+    var chatEl = document.getElementById('game-chat-messages');
+    if (chatEl) chatEl.innerHTML = '';
+}
+
+function gameCreateConvoy() {
+    if (!mpConnected) return;
+    var nameInput = document.getElementById('game-convoy-name');
+    var name = nameInput ? nameInput.value.trim() : '';
+    MP.createConvoy(name || null);
+}
+
+function gameLeaveConvoy() {
+    MP.leaveConvoy();
+}
+
+function addGameChatMessage(msg) {
+    var chatEl = document.getElementById('game-chat-messages');
+    if (!chatEl) return;
+
+    if (chatEl.querySelector('p')) chatEl.innerHTML = '';
+
+    var time = '';
+    if (msg.timestamp) {
+        var d = new Date(msg.timestamp);
+        time = d.getHours().toString().padStart(2, '0') + ':' + d.getMinutes().toString().padStart(2, '0');
+    }
+
+    var isLocal = currentUser && msg.authorId === currentUser.uid;
+    var html = '<div class="game-chat-msg">';
+    html += '<span class="game-chat-msg-author">' + esc(msg.authorName || 'Unknown') + '</span>';
+    html += '<span class="game-chat-msg-time">' + time + '</span>';
+    html += '<div class="game-chat-msg-text">' + esc(msg.text) + '</div>';
+    html += '</div>';
+
+    chatEl.innerHTML += html;
+    chatEl.scrollTop = chatEl.scrollHeight;
+}
+
+function addGameChatSystem(text) {
+    var chatEl = document.getElementById('game-chat-messages');
+    if (!chatEl) return;
+
+    if (chatEl.querySelector('p') && chatEl.textContent.indexOf('Connect') !== -1) chatEl.innerHTML = '';
+
+    var html = '<div class="game-chat-msg"><span class="game-chat-msg-system">[System] ' + esc(text) + '</span></div>';
+    chatEl.innerHTML += html;
+    chatEl.scrollTop = chatEl.scrollHeight;
+}
+
+function gameUpdateNearbyPlayers() {
+    if (!mpConnected) return;
+    var list = document.getElementById('game-nearby-list');
+    if (!list) return;
+
+    MP.getNearbyPlayers(5000).then(function(nearby) {
+        if (nearby.length === 0) {
+            list.innerHTML = '<p style="color:#606070;">No nearby players.</p>';
+            return;
+        }
+        var html = '';
+        nearby.sort(function(a, b) { return a._distance - b._distance; });
+        nearby.forEach(function(p) {
+            html += '<div class="game-player-list-item">';
+            html += '<span class="game-player-dot"></span>';
+            html += '<span class="game-player-list-name">' + esc(p.username) + '</span>';
+            html += '<span class="game-player-list-id">' + esc(p.convoyId) + '</span>';
+            html += '<span class="game-player-list-speed">' + Math.round(p.speed || 0) + ' km/h</span>';
+            html += '</div>';
+        });
+        list.innerHTML = html;
+    });
+}
+
+function gameUpdatePlayerCount() {
+    var el = document.getElementById('game-player-count');
+    if (!el) return;
+
+    var serverId = MP.getServerId();
+    var ref = firebase.database().ref('servers/' + serverId + '/players');
+    ref.once('value', function(snap) {
+        el.textContent = snap.numChildren();
+    });
+
+    if (mpConnected) {
+        ref.on('value', function(snap) {
+            el.textContent = snap.numChildren();
+        });
+    }
+}
+
+function gameUpdateConvoyPanel(data) {
+    var el = document.getElementById('game-convoy-content');
+    if (!el || !data) return;
+
+    var html = '<div style="margin-bottom:12px;">';
+    html += '<strong style="color:#e94560;">' + esc(data.name || 'Convoy') + '</strong>';
+    html += '<span style="color:#606070; font-size:0.8rem; margin-left:8px;">ID: ' + esc(data.id) + '</span>';
+    html += '</div>';
+
+    html += '<div class="game-convoy-members">';
+    var memberNames = data.memberNames || {};
+    var members = data.members || {};
+    var memberIds = Object.keys(members);
+
+    memberIds.forEach(function(uid) {
+        var isLeader = data.leaderId === uid;
+        var name = memberNames[uid] || uid;
+        html += '<div class="game-convoy-member">';
+        html += '<span class="game-player-dot"></span>';
+        html += '<span class="game-convoy-member-name">' + esc(name) + '</span>';
+        if (isLeader) html += '<span class="game-convoy-member-leader">(Leader)</span>';
+        html += '</div>';
+    });
+    html += '</div>';
+
+    html += '<button class="btn-secondary game-btn" onclick="gameLeaveConvoy()" style="width:100%;">Leave Convoy</button>';
+
+    el.innerHTML = html;
+}
+
+// ==========================================
+// GAME MAP
+// ==========================================
+
+var ETS2_CITIES = [
+    { name: 'Paris', x: -1000, z: -500 },
+    { name: 'London', x: -1400, z: -300 },
+    { name: 'Berlin', x: 200, z: -400 },
+    { name: 'Rome', x: 500, z: 600 },
+    { name: 'Madrid', x: -1200, z: 700 },
+    { name: 'Amsterdam', x: -200, z: -350 },
+    { name: 'Prague', x: 500, z: -200 },
+    { name: 'Warsaw', x: 700, z: -350 },
+    { name: 'Stockholm', x: 400, z: -900 },
+    { name: 'Oslo', x: 100, z: -850 },
+    { name: 'Copenhagen', x: 300, z: -500 },
+    { name: 'Vienna', x: 500, z: -100 },
+    { name: 'Zurich', x: 200, z: 100 },
+    { name: 'Marseille', x: -200, z: 400 },
+    { name: 'Barcelona', x: -800, z: 600 },
+    { name: 'Milan', x: 300, z: 200 },
+    { name: 'Lisbon', x: -1800, z: 700 },
+    { name: 'Dublin', x: -1700, z: -400 },
+    { name: 'Hamburg', x: 0, z: -500 },
+    { name: 'Munich', x: 350, z: 0 },
+    { name: 'Budapest', x: 700, z: 0 },
+    { name: 'Athens', x: 900, z: 600 },
+    { name: 'Istanbul', x: 1200, z: 400 },
+    { name: 'Helsinki', x: 700, z: -800 },
+];
+
+var mapAnimFrame = null;
+
+function initGameMap() {
+    var canvas = document.getElementById('game-map-canvas');
+    if (!canvas) return;
+
+    canvas.addEventListener('mousedown', function(e) {
+        mpMapDragging = true;
+        mpMapLastX = e.clientX;
+        mpMapLastZ = e.clientY;
+    });
+
+    canvas.addEventListener('mousemove', function(e) {
+        if (!mpMapDragging) return;
+        var dx = e.clientX - mpMapLastX;
+        var dz = e.clientY - mpMapLastZ;
+        mpMapCenterX -= dx / mpMapZoom;
+        mpMapCenterZ -= dz / mpMapZoom;
+        mpMapLastX = e.clientX;
+        mpMapLastZ = e.clientY;
+        gameDrawMap();
+    });
+
+    canvas.addEventListener('mouseup', function() { mpMapDragging = false; });
+    canvas.addEventListener('mouseleave', function() { mpMapDragging = false; });
+
+    canvas.addEventListener('wheel', function(e) {
+        e.preventDefault();
+        var delta = e.deltaY > 0 ? -0.1 : 0.1;
+        mpMapZoom = Math.max(0.2, Math.min(3, mpMapZoom + delta));
+        gameDrawMap();
+    });
+
+    gameDrawMap();
+    gameMapAnimate();
+}
+
+function gameMapAnimate() {
+    if (mpConnected) {
+        gameDrawMap();
+    }
+    mapAnimFrame = requestAnimationFrame(gameMapAnimate);
+}
+
+function gameMapZoom(dir) {
+    mpMapZoom = Math.max(0.2, Math.min(3, mpMapZoom + dir * 0.2));
+    gameDrawMap();
+}
+
+function gameMapCenter() {
+    var lp = MP.getLocalPlayer();
+    if (lp) {
+        mpMapCenterX = lp.x;
+        mpMapCenterZ = lp.z;
+    }
+    gameDrawMap();
+}
+
+function gameDrawMap() {
+    var canvas = document.getElementById('game-map-canvas');
+    if (!canvas) return;
+    var ctx = canvas.getContext('2d');
+    var w = canvas.width = canvas.offsetWidth;
+    var h = canvas.height = canvas.offsetHeight;
+
+    ctx.fillStyle = '#0d1b2a';
+    ctx.fillRect(0, 0, w, h);
+
+    var cx = w / 2 + mpMapCenterX * mpMapZoom;
+    var cz = h / 2 + mpMapCenterZ * mpMapZoom;
+
+    ctx.strokeStyle = 'rgba(15, 52, 96, 0.4)';
+    ctx.lineWidth = 1;
+    var gridSize = 200 * mpMapZoom;
+    var offsetX = cx % gridSize;
+    var offsetZ = cz % gridSize;
+    for (var gx = offsetX; gx < w; gx += gridSize) {
+        ctx.beginPath(); ctx.moveTo(gx, 0); ctx.lineTo(gx, h); ctx.stroke();
+    }
+    for (var gz = offsetZ; gz < h; gz += gridSize) {
+        ctx.beginPath(); ctx.moveTo(0, gz); ctx.lineTo(w, gz); ctx.stroke();
+    }
+
+    ETS2_CITIES.forEach(function(city) {
+        var sx = cx + city.x * mpMapZoom;
+        var sz = cz + city.z * mpMapZoom;
+
+        if (sx < -50 || sx > w + 50 || sz < -50 || sz > h + 50) return;
+
+        ctx.fillStyle = 'rgba(233, 69, 96, 0.6)';
+        ctx.beginPath();
+        ctx.arc(sx, sz, 4, 0, Math.PI * 2);
+        ctx.fill();
+
+        ctx.fillStyle = '#a0a0b0';
+        ctx.font = '10px Segoe UI';
+        ctx.textAlign = 'center';
+        ctx.fillText(city.name, sx, sz - 8);
+    });
+
+    if (!mpConnected) {
+        ctx.fillStyle = '#606070';
+        ctx.font = '16px Segoe UI';
+        ctx.textAlign = 'center';
+        ctx.fillText('Connect to a server to see players', w / 2, h / 2);
+        return;
+    }
+
+    var serverId = MP.getServerId();
+    var ref = firebase.database().ref('servers/' + serverId + '/players');
+    ref.once('value', function(snap) {
+        var lp = MP.getLocalPlayer();
+        ctx.clearRect(0, 0, w, h);
+
+        ctx.fillStyle = '#0d1b2a';
+        ctx.fillRect(0, 0, w, h);
+
+        ctx.strokeStyle = 'rgba(15, 52, 96, 0.4)';
+        ctx.lineWidth = 1;
+        for (var gx = offsetX; gx < w; gx += gridSize) {
+            ctx.beginPath(); ctx.moveTo(gx, 0); ctx.lineTo(gx, h); ctx.stroke();
+        }
+        for (var gz = offsetZ; gz < h; gz += gridSize) {
+            ctx.beginPath(); ctx.moveTo(0, gz); ctx.lineTo(w, gz); ctx.stroke();
+        }
+
+        ETS2_CITIES.forEach(function(city) {
+            var sx = cx + city.x * mpMapZoom;
+            var sz = cz + city.z * mpMapZoom;
+            if (sx < -50 || sx > w + 50 || sz < -50 || sz > h + 50) return;
+            ctx.fillStyle = 'rgba(233, 69, 96, 0.6)';
+            ctx.beginPath(); ctx.arc(sx, sz, 4, 0, Math.PI * 2); ctx.fill();
+            ctx.fillStyle = '#a0a0b0';
+            ctx.font = '10px Segoe UI';
+            ctx.textAlign = 'center';
+            ctx.fillText(city.name, sx, sz - 8);
+        });
+
+        snap.forEach(function(child) {
+            var p = child.val();
+            var sx = cx + p.x * mpMapZoom;
+            var sz = cz + p.z * mpMapZoom;
+
+            if (sx < -20 || sx > w + 20 || sz < -20 || sz > h + 20) return;
+
+            var isLocal = lp && child.key === lp.uid;
+
+            if (isLocal) {
+                ctx.fillStyle = '#2ecc71';
+                ctx.beginPath(); ctx.arc(sx, sz, 7, 0, Math.PI * 2); ctx.fill();
+                ctx.strokeStyle = '#27ae60';
+                ctx.lineWidth = 2;
+                ctx.beginPath(); ctx.arc(sx, sz, 10, 0, Math.PI * 2); ctx.stroke();
+            } else {
+                ctx.fillStyle = '#3498db';
+                ctx.beginPath(); ctx.arc(sx, sz, 5, 0, Math.PI * 2); ctx.fill();
+            }
+
+            ctx.fillStyle = isLocal ? '#2ecc71' : '#fff';
+            ctx.font = (isLocal ? 'bold ' : '') + '11px Segoe UI';
+            ctx.textAlign = 'center';
+            ctx.fillText(p.username || 'Unknown', sx, sz - 12);
+        });
+    });
 }
