@@ -44,6 +44,13 @@ ul { list-style: none; }
     cursor: pointer;
     display: flex;
     align-items: center;
+    gap: 8px;
+}
+
+.nav-logo {
+    height: 36px;
+    width: 36px;
+    object-fit: contain;
 }
 
 .nav-links { display: flex; gap: 24px; }
@@ -123,6 +130,14 @@ ul { list-style: none; }
 }
 
 .hero h1 { font-size: 3.5rem; color: #fff; margin-bottom: 12px; letter-spacing: 2px; }
+
+.hero-logo {
+    width: 100px;
+    height: 100px;
+    object-fit: contain;
+    margin-bottom: 20px;
+    filter: drop-shadow(0 4px 15px rgba(233,69,96,0.4));
+}
 .hero p { font-size: 1.25rem; color: #a0a0b0; margin-bottom: 32px; }
 
 .hero-buttons { display: flex; gap: 16px; justify-content: center; flex-wrap: wrap; }
@@ -141,6 +156,21 @@ ul { list-style: none; }
 }
 
 .btn-primary:hover { background-color: #c73550; }
+
+.btn-play {
+    display: inline-block;
+    padding: 14px 40px;
+    background-color: #2ecc71;
+    color: #fff;
+    border: none;
+    border-radius: 6px;
+    font-size: 1.1rem;
+    font-weight: bold;
+    cursor: pointer;
+    transition: background-color 0.2s;
+}
+
+.btn-play:hover { background-color: #27ae60; }
 
 .btn-secondary {
     display: inline-block;
