@@ -1,0 +1,903 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ConvoyMP - ETS2 Multiplayer</title>
+    <link rel="stylesheet" href="style.css">
+    <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-auth-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore-compat.js"></script>
+    <script src="script.js"></script>
+</head>
+<body>
+
+<!-- ===== NAVBAR ===== -->
+<nav class="navbar">
+    <div class="nav-left">
+        <div class="nav-brand">
+            ConvoyMP
+        </div>
+        <div class="nav-links" id="nav-links">
+            <a onclick="showPage('home')" class="active" id="nav-home">Home</a>
+            <a onclick="showPage('news')" id="nav-news">News</a>
+            <a onclick="showPage('servers')" id="nav-servers">Servers</a>
+            <a onclick="showPage('players')" id="nav-players">Players</a>
+            <a onclick="showPage('community')" id="nav-community">Community</a>
+            <a onclick="showPage('download')" id="nav-download">Download</a>
+            <a onclick="showPage('rules')" id="nav-rules">Rules</a>
+            <a onclick="showPage('support')" id="nav-support">Support</a>
+            <a onclick="showPage('account')" id="nav-account-btn" style="display:none;">Account</a>
+            <a onclick="showPage('admin')" id="nav-admin-btn" style="display:none;">Admin</a>
+        </div>
+    </div>
+    <div class="nav-right">
+        <span class="nav-player-count">Trucking: <span id="player-count">0</span></span>
+        <span id="nav-username" style="color:#e0e0e0; font-size:0.9rem; display:none;"></span>
+        <button class="btn-login" id="btn-nav-login" onclick="showPage('login')">Login</button>
+        <button class="btn-register" id="btn-nav-register" onclick="showPage('register')">Register</button>
+        <button class="btn-login" id="btn-nav-logout" style="display:none;">Logout</button>
+        <button class="nav-toggle" onclick="toggleNav()">&#9776;</button>
+    </div>
+</nav>
+
+<!-- ===== HOME ===== -->
+<div class="page active" id="page-home">
+    <section class="hero">
+        <h1>Welcome to ConvoyMP</h1>
+        <p>Multiplayer for Euro Truck Simulator 2. Drive together with thousands of truckers.</p>
+        <div class="hero-buttons">
+            <button class="btn-primary" id="hero-main-btn" onclick="showPage('register')">Register Now</button>
+            <button class="btn-secondary" onclick="showPage('download')">Download</button>
+        </div>
+    </section>
+    <section class="stats-section">
+        <div class="stats-grid" id="home-stats">
+            <div class="stat-item"><h3 data-stat="users">0</h3><p>Users</p></div>
+            <div class="stat-item"><h3>0</h3><p>Events</p></div>
+            <div class="stat-item"><h3>0</h3><p>Team Members</p></div>
+            <div class="stat-item"><h3>0</h3><p>VTCs</p></div>
+        </div>
+    </section>
+    <section class="section">
+        <h2 class="section-title">What We Offer</h2>
+        <p class="section-subtitle">Everything you need for the ultimate multiplayer experience</p>
+        <div class="features-grid">
+            <div class="feature-card"><div class="feature-icon">&#128663;</div><h3>Simulation</h3><p>Drive across Europe with other truckers in a realistic multiplayer environment.</p></div>
+            <div class="feature-card"><div class="feature-icon">&#127970;</div><h3>VTC System</h3><p>Join or create your own Virtual Trucking Company. Recruit members and manage your fleet.</p></div>
+            <div class="feature-card"><div class="feature-icon">&#128737;</div><h3>Moderation</h3><p>Our moderation team is here 365 days a year to deal with reports and keep the roads safe.</p></div>
+            <div class="feature-card"><div class="feature-icon">&#128222;</div><h3>Support</h3><p>Need help? Our support team is here on the website, forum, and Discord.</p></div>
+            <div class="feature-card"><div class="feature-icon">&#128101;</div><h3>Community</h3><p>Join our chat, share messages, and connect with truckers from around the globe.</p></div>
+            <div class="feature-card"><div class="feature-icon">&#128197;</div><h3>Events</h3><p>Host your own events and convoys. Our event system gives you dedicated server support.</p></div>
+        </div>
+    </section>
+</div>
+
+<!-- ===== NEWS ===== -->
+<div class="page" id="page-news">
+    <section class="page-content">
+        <h1>News</h1>
+        <p>All the latest updates from ConvoyMP.</p>
+        <div id="admin-news-form" style="display:none;">
+            <div class="card" style="margin-bottom:24px; border-color:#e94560;">
+                <h2>Create News Post (Admin)</h2>
+                <div class="alert alert-error" style="display:none;" id="news-error"></div>
+                <div class="alert alert-success" style="display:none;" id="news-success"></div>
+                <div class="form-group"><label>Title</label><input type="text" id="news-title" placeholder="News post title"></div>
+                <div class="form-group"><label>Content</label><textarea id="news-content" placeholder="Write your news post..."></textarea></div>
+                <button class="btn-primary" id="btn-create-news">Publish</button>
+            </div>
+        </div>
+        <div class="news-grid" id="news-list"><p style="color:#a0a0b0;">Loading news...</p></div>
+    </section>
+</div>
+
+<!-- ===== SERVERS ===== -->
+<div class="page" id="page-servers">
+    <section class="page-content">
+        <h1>Server Status</h1>
+        <p>Check the status of all ConvoyMP servers.</p>
+        <table class="server-table">
+            <thead><tr><th>Server</th><th>Players</th><th>Location</th><th>Status</th></tr></thead>
+            <tbody id="servers-list"><tr><td colspan="4" style="color:#a0a0b0;text-align:center;padding:20px;">Loading...</td></tr></tbody>
+        </table>
+    </section>
+</div>
+
+<!-- ===== PLAYERS ===== -->
+<div class="page" id="page-players">
+    <section class="page-content">
+        <h1>Find Players</h1>
+        <p>Search for ConvoyMP players by username or ConvoyMP ID.</p>
+        <div class="search-bar">
+            <input type="text" id="player-search" placeholder="Search by username or ConvoyMP ID (e.g. CMP-A3F7K)...">
+            <button class="btn-primary" id="btn-search-player" style="padding:14px 28px;">Search</button>
+        </div>
+        <div id="player-search-results">
+            <p style="color:#606070;">Type a name or ID to search for players.</p>
+        </div>
+        <div id="player-profile-view"></div>
+    </section>
+</div>
+
+<!-- ===== COMMUNITY CHAT ===== -->
+<div class="page" id="page-community">
+    <section class="page-content">
+        <h1>Community Chat</h1>
+        <p>Talk with other truckers. Send text and emojis.</p>
+        <div class="card" style="max-width:700px;">
+            <div id="chat-messages">
+                <p style="color:#606070; text-align:center; padding:40px;">Loading chat...</p>
+            </div>
+            <div class="chat-input-row">
+                <button class="btn-secondary" id="btn-emoji" style="padding:8px 12px; font-size:1.2rem;">&#128512;</button>
+                <input type="text" id="chat-input" placeholder="Type a message...">
+                <button class="btn-primary" id="btn-send-chat" style="padding:10px 20px;">Send</button>
+            </div>
+            <div class="emoji-picker" id="emoji-picker">
+                <span onclick="insertEmoji('&#128512;')">&#128512;</span>
+                <span onclick="insertEmoji('&#128513;')">&#128513;</span>
+                <span onclick="insertEmoji('&#128514;')">&#128514;</span>
+                <span onclick="insertEmoji('&#128515;')">&#128515;</span>
+                <span onclick="insertEmoji('&#128516;')">&#128516;</span>
+                <span onclick="insertEmoji('&#128517;')">&#128517;</span>
+                <span onclick="insertEmoji('&#128518;')">&#128518;</span>
+                <span onclick="insertEmoji('&#128519;')">&#128519;</span>
+                <span onclick="insertEmoji('&#128520;')">&#128520;</span>
+                <span onclick="insertEmoji('&#128522;')">&#128522;</span>
+                <span onclick="insertEmoji('&#128525;')">&#128525;</span>
+                <span onclick="insertEmoji('&#128526;')">&#128526;</span>
+                <span onclick="insertEmoji('&#128529;')">&#128529;</span>
+                <span onclick="insertEmoji('&#128536;')">&#128536;</span>
+                <span onclick="insertEmoji('&#128545;')">&#128545;</span>
+                <span onclick="insertEmoji('&#128548;')">&#128548;</span>
+                <span onclick="insertEmoji('&#128557;')">&#128557;</span>
+                <span onclick="insertEmoji('&#128563;')">&#128563;</span>
+                <span onclick="insertEmoji('&#128564;')">&#128564;</span>
+                <span onclick="insertEmoji('&#128568;')">&#128568;</span>
+                <span onclick="insertEmoji('&#128570;')">&#128570;</span>
+                <span onclick="insertEmoji('&#128578;')">&#128578;</span>
+                <span onclick="insertEmoji('&#128588;')">&#128588;</span>
+                <span onclick="insertEmoji('&#128640;')">&#128640;</span>
+                <span onclick="insertEmoji('&#128663;')">&#128663;</span>
+                <span onclick="insertEmoji('&#128664;')">&#128664;</span>
+                <span onclick="insertEmoji('&#128666;')">&#128666;</span>
+                <span onclick="insertEmoji('&#127828;')">&#127828;</span>
+                <span onclick="insertEmoji('&#127829;')">&#127829;</span>
+                <span onclick="insertEmoji('&#127835;')">&#127835;</span>
+                <span onclick="insertEmoji('&#9749;')">&#9749;</span>
+            </div>
+            <p style="color:#606070; font-size:0.8rem; margin-top:8px;">AI moderation filters inappropriate content.</p>
+        </div>
+    </section>
+</div>
+
+<!-- ===== DOWNLOAD ===== -->
+<div class="page" id="page-download">
+    <section class="page-content">
+        <h1>Download ConvoyMP</h1>
+        <p>Installation is quick and easy. Follow the steps below to get started.</p>
+        <div class="card">
+            <h2>System Requirements</h2>
+            <div class="form-row">
+                <div>
+                    <h3 style="color:#e94560; margin-bottom:12px;">Minimum</h3>
+                    <ul class="rules-list">
+                        <li><strong>OS:</strong> Windows 10 64-bit</li>
+                        <li><strong>CPU:</strong> Intel Core i5-4590 / AMD FX-8350</li>
+                        <li><strong>RAM:</strong> 8 GB</li>
+                        <li><strong>GPU:</strong> NVIDIA GTX 760 / AMD Radeon R9 280</li>
+                        <li><strong>Storage:</strong> 5 GB free space</li>
+                        <li><strong>Network:</strong> Broadband internet connection</li>
+                    </ul>
+                </div>
+                <div>
+                    <h3 style="color:#2ecc71; margin-bottom:12px;">Recommended</h3>
+                    <ul class="rules-list">
+                        <li><strong>OS:</strong> Windows 11 64-bit</li>
+                        <li><strong>CPU:</strong> Intel Core i7-10700 / AMD Ryzen 7 3700X</li>
+                        <li><strong>RAM:</strong> 16 GB</li>
+                        <li><strong>GPU:</strong> NVIDIA RTX 3060 / AMD RX 6600 XT</li>
+                        <li><strong>Storage:</strong> 5 GB SSD</li>
+                        <li><strong>Network:</strong> Broadband internet connection</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+        <div class="card">
+            <h2>Also Requires</h2>
+            <ul class="rules-list">
+                <li><strong>Euro Truck Simulator 2</strong> - Steam version (latest update)</li>
+                <li><strong>DirectX:</strong> Version 11 or higher</li>
+                <li><strong>.NET Framework:</strong> 4.7.2 or higher</li>
+            </ul>
+        </div>
+        <div class="card">
+            <h2>Installation Steps</h2>
+            <ol class="rules-list">
+                <li><strong>Register an Account</strong> - Create a free ConvoyMP account on our website.</li>
+                <li><strong>Download the Launcher</strong> - Click the download button below.</li>
+                <li><strong>Connect Steam</strong> - Link your Steam account that owns ETS2.</li>
+                <li><strong>Install &amp; Play</strong> - Run the installer, launch ConvoyMP, and start trucking!</li>
+            </ol>
+        </div>
+        <div style="text-align:center; margin-top:32px;">
+            <button class="btn-primary" id="btn-download-launcher">Download ConvoyMP Launcher</button>
+        </div>
+    </section>
+</div>
+
+<!-- ===== RULES ===== -->
+<div class="page" id="page-rules">
+    <section class="page-content">
+        <h1>Rules</h1>
+        <p>Follow these rules to keep ConvoyMP fun for everyone.</p>
+
+        <div class="rules-category">
+            <h2>&#128663; Simulation Rules</h2>
+            <ol class="rules-list">
+                <li><strong>Drive on the correct side</strong> - Always drive on the right-hand side of the road (except in the UK).</li>
+                <li><strong>Use your indicators</strong> - Signal before turning, changing lanes, or merging.</li>
+                <li><strong>Obey traffic lights and signs</strong> - Stop at red lights, yield at junctions, respect speed limits.</li>
+                <li><strong>No speeding</strong> - Follow posted speed limits. Driving too fast is dangerous in traffic.</li>
+                <li><strong>Use your mirrors</strong> - Check mirrors before overtaking or changing lanes.</li>
+                <li><strong>Park properly</strong> - Do not park on roads, at intersections, or in fuel station forecourts.</li>
+                <li><strong>No reckless driving</strong> - Drive smoothly. No swerving, weaving, or erratic behaviour.</li>
+                <li><strong>Follow motorway rules</strong> - Use the correct lane. Overtake on the left is not allowed.</li>
+                <li><strong>Headlights at night</strong> - Use headlights between 22:00 and 06:00 in-game time.</li>
+            </ol>
+        </div>
+
+        <div class="rules-category">
+            <h2>&#127918; In-Game Rules</h2>
+            <ol class="rules-list">
+                <li><strong>No blocking roads</strong> - Do not block roads, intersections, roundabouts, or weigh stations on purpose.</li>
+                <li><strong>No griefing</strong> - Do not intentionally ram, crash into, or push other players.</li>
+                <li><strong>No cutting off</strong> - Do not pull in front of trucks and brake suddenly.</li>
+                <li><strong>No backwards driving</strong> - Never drive against the flow of traffic.</li>
+                <li><strong>No ramming</strong> - Do not use your truck as a weapon. Accidents happen, but deliberate ramming is a ban.</li>
+                <li><strong>No exploiting</strong> - Do not abuse game bugs or glitches to gain an advantage.</li>
+                <li><strong>No AFK on roads</strong> - Do not leave your truck idle on a road or in a lane.</li>
+                <li><strong>Convoy rules</strong> - When in a convoy, follow the leader and maintain spacing. Do not overtake unless instructed.</li>
+                <li><strong>Trailer rules</strong> - Do not disconnect your trailer on public roads or use it to block others.</li>
+            </ol>
+        </div>
+
+        <div class="rules-category">
+            <h2>&#127760; Website &amp; Chat Rules</h2>
+            <ol class="rules-list">
+                <li><strong>Be respectful</strong> - Treat everyone with respect. No harassment, bullying, or personal attacks.</li>
+                <li><strong>No hate speech</strong> - Racist, sexist, homophobic, or any discriminatory language is a permanent ban.</li>
+                <li><strong>No spamming</strong> - Do not spam messages, emojis, or links in community chat.</li>
+                <li><strong>No offensive content</strong> - No NSFW, gore, or inappropriate messages or links.</li>
+                <li><strong>No advertising</strong> - Do not promote other servers, Discord servers, or services without permission.</li>
+                <li><strong>English in main chat</strong> - Keep community chat in English so moderators can moderate.</li>
+                <li><strong>No impersonation</strong> - Do not pretend to be a staff member or another player.</li>
+                <li><strong>Protect your account</strong> - Do not share your login details. You are responsible for your account.</li>
+                <li><strong>No alt accounts</strong> - Do not create multiple accounts to avoid bans or restrictions.</li>
+                <li><strong>Follow staff instructions</strong> - Moderators and admins have the final say in all matters.</li>
+            </ol>
+        </div>
+
+        <div class="rules-category">
+            <h2>&#128270; Report System Rules</h2>
+            <ol class="rules-list">
+                <li><strong>Only report real incidents</strong> - Do not file false reports or reports as a joke.</li>
+                <li><strong>Provide evidence</strong> - Video clips or detailed descriptions greatly help your report.</li>
+                <li><strong>Be specific</strong> - Include the player's name, server, date/time, and a detailed description.</li>
+                <li><strong>No report trading</strong> - Do not offer to remove a report in exchange for anything.</li>
+                <li><strong>Report the correct rule</strong> - Select the rule that was actually broken.</li>
+                <li><strong>Be patient</strong> - Reports are reviewed within 48 hours. Do not spam or duplicate reports.</li>
+                <li><strong>No revenge reporting</strong> - Do not file a report just because someone reported you.</li>
+                <li><strong>Appeals</strong> - If you are banned, you have the right to appeal. Use the ban appeal system, not report spam.</li>
+            </ol>
+        </div>
+
+        <p class="rules-note">Breaking these rules may result in a warning, temporary ban, or permanent ban from ConvoyMP. Our AI moderation system automatically filters inappropriate language in chat. Serious offences (hate speech, hacking, deliberate ramming) result in immediate bans.</p>
+    </section>
+</div>
+
+<!-- ===== SUPPORT ===== -->
+<div class="page" id="page-support">
+    <section class="page-content">
+        <h1>Guides &amp; Support</h1>
+        <p>Need help? Check our guides or contact the support team.</p>
+        <div class="tabs">
+            <button class="tab active" onclick="switchTab('faq', event)">FAQ</button>
+            <button class="tab" onclick="switchTab('install', event)">Installation</button>
+            <button class="tab" onclick="switchTab('getting-started', event)">Getting Started</button>
+            <button class="tab" onclick="switchTab('troubleshooting', event)">Troubleshooting</button>
+            <button class="tab" onclick="switchTab('contact', event)">Contact</button>
+        </div>
+
+        <div class="tab-content active" id="tab-faq">
+            <div class="guide-card">
+                <h3>How do I register?</h3>
+                <p>Click the Register button on the top right of the website, fill in your details, and you will receive a ConvoyMP ID (e.g. CMP-A3F7K). Your first account becomes the admin automatically.</p>
+            </div>
+            <div class="guide-card">
+                <h3>What is my ConvoyMP ID?</h3>
+                <p>Every player gets a unique ConvoyMP ID when they register. It looks like CMP-A3F7K. You can find it on your Account Dashboard. Other players can use it to search for you.</p>
+            </div>
+            <div class="guide-card">
+                <h3>How do I find other players?</h3>
+                <p>Go to the Players page in the navbar and search by username or ConvoyMP ID. Click on a player card to see their profile, distance driven, and jobs completed.</p>
+            </div>
+            <div class="guide-card">
+                <h3>ConvoyMP won't launch</h3>
+                <p>Make sure ETS2 is updated on Steam. Run the launcher as administrator. Check that you meet the system requirements on the Download page.</p>
+            </div>
+            <div class="guide-card">
+                <h3>How do I link my Steam account?</h3>
+                <p>Go to Account Settings after logging in and click "Link Steam Account". This is required to play on ConvoyMP servers.</p>
+            </div>
+            <div class="guide-card">
+                <h3>How do I report a player?</h3>
+                <p>Go to Account > Report Player in the sidebar. Fill in the offender's username, the server, which rule was broken, and describe what happened. Our team reviews reports within 48 hours.</p>
+            </div>
+            <div class="guide-card">
+                <h3>How do I appeal a ban?</h3>
+                <p>Go to Account > Ban Appeals. Explain why you believe the ban was unfair. Our team will review your appeal and respond.</p>
+            </div>
+        </div>
+
+        <div class="tab-content" id="tab-install">
+            <div class="guide-card">
+                <h3>Step 1: Register an Account</h3>
+                <p>Create a free ConvoyMP account on this website. You will receive a unique ConvoyMP Player ID.</p>
+            </div>
+            <div class="guide-card">
+                <h3>Step 2: Download the Launcher</h3>
+                <p>Go to the Download page and click "Download ConvoyMP Launcher". Save the installer to your computer.</p>
+            </div>
+            <div class="guide-card">
+                <h3>Step 3: Install the Launcher</h3>
+                <p>Run the installer and follow the on-screen instructions. Choose your ETS2 installation directory when prompted.</p>
+            </div>
+            <div class="guide-card">
+                <h3>Step 4: Link Your Steam Account</h3>
+                <p>Open the ConvoyMP launcher and log in with your ConvoyMP credentials. Click "Link Steam" and authorise access to your Steam account that owns ETS2.</p>
+            </div>
+            <div class="guide-card">
+                <h3>Step 5: Play!</h3>
+                <p>Select a server from the server list, click "Connect", and start trucking with other players across Europe!</p>
+            </div>
+        </div>
+
+        <div class="tab-content" id="tab-getting-started">
+            <div class="guide-card">
+                <h3>Setting Up Your Profile</h3>
+                <p>After registering, go to your Account Dashboard to set up your profile:</p>
+                <ul>
+                    <li>Add a bio to tell other truckers about yourself</li>
+                    <li>Your ConvoyMP ID is displayed on your dashboard - share it with friends</li>
+                </ul>
+            </div>
+            <div class="guide-card">
+                <h3>Joining Your First Server</h3>
+                <p>Go to the Servers page to see which servers are online. Pick a server with available slots and connect through the ConvoyMP launcher. Start in a quiet area to get used to multiplayer driving.</p>
+            </div>
+            <div class="guide-card">
+                <h3>Using Community Chat</h3>
+                <p>Visit the Community page to chat with other truckers in real-time. You can send messages and use emojis.</p>
+            </div>
+            <div class="guide-card">
+                <h3>Finding Other Players</h3>
+                <p>Use the Players page to search for friends or other truckers by username or ConvoyMP ID. Click on a player card to see their profile and stats.</p>
+            </div>
+        </div>
+
+        <div class="tab-content" id="tab-troubleshooting">
+            <div class="guide-card">
+                <h3>Launcher won't open</h3>
+                <p>Try running as administrator. Make sure .NET Framework 4.7.2 or higher is installed. Check that antivirus isn't blocking the launcher.</p>
+            </div>
+            <div class="guide-card">
+                <h3>Can't connect to server</h3>
+                <p>Check your internet connection. Make sure your firewall allows ConvoyMP through. Try a different server. Check the Servers page to see if the server is online.</p>
+            </div>
+            <div class="guide-card">
+                <h3>Game crashes on launch</h3>
+                <p>Verify ETS2 game files on Steam. Remove any other ETS2 mods that may conflict. Make sure ETS2 is updated to the latest version.</p>
+            </div>
+            <div class="guide-card">
+                <h3>Low FPS in multiplayer</h3>
+                <p>Lower your graphics settings in ETS2. Reduce the draw distance. Close background applications. Make sure your GPU drivers are up to date.</p>
+            </div>
+        </div>
+
+        <div class="tab-content" id="tab-contact">
+            <div class="card">
+                <h2>Contact Support</h2>
+                <div class="form-group"><label>Subject</label><input type="text" placeholder="How can we help?"></div>
+                <div class="form-group"><label>Message</label><textarea placeholder="Describe your issue..."></textarea></div>
+                <button class="btn-primary" onclick="alert('Ticket submitted! We will get back to you soon.')">Submit Ticket</button>
+            </div>
+        </div>
+    </section>
+</div>
+
+<!-- ===== LOGIN ===== -->
+<div class="page" id="page-login">
+    <section class="page-content center-page">
+        <div class="form-container">
+            <h1>Login</h1>
+            <p class="subtitle">Welcome back to ConvoyMP</p>
+            <div class="alert alert-error" style="display:none;" id="login-error"></div>
+            <div class="alert alert-success" style="display:none;" id="login-success"></div>
+            <div class="form-group"><label>Email</label><input type="email" id="login-email" placeholder="you@example.com"></div>
+            <div class="form-group"><label>Password</label><input type="password" id="login-password" placeholder="Enter your password"></div>
+            <div class="form-check"><input type="checkbox" id="remember"><label for="remember">Remember me</label></div>
+            <button class="btn-primary" id="btn-login">Login</button>
+            <div class="form-divider">or</div>
+            <button class="btn-secondary" id="btn-google-login">Sign in with Google</button>
+            <p class="form-link">Don't have an account? <a onclick="showPage('register')">Register here</a></p>
+        </div>
+    </section>
+</div>
+
+<!-- ===== REGISTER ===== -->
+<div class="page" id="page-register">
+    <section class="page-content center-page">
+        <div class="form-container">
+            <h1>Register</h1>
+            <p class="subtitle">Create your ConvoyMP account</p>
+            <div class="alert alert-error" style="display:none;" id="register-error"></div>
+            <div class="alert alert-success" style="display:none;" id="register-success"></div>
+            <div class="form-row">
+                <div class="form-group"><label>First Name</label><input type="text" id="reg-firstname" placeholder="John"></div>
+                <div class="form-group"><label>Last Name</label><input type="text" id="reg-lastname" placeholder="Doe"></div>
+            </div>
+            <div class="form-group"><label>Username</label><input type="text" id="reg-username" placeholder="TruckerJohn"></div>
+            <div class="form-group"><label>Email</label><input type="email" id="reg-email" placeholder="you@example.com"></div>
+            <div class="form-group"><label>Password</label><input type="password" id="reg-password" placeholder="Create a password"></div>
+            <div class="form-group"><label>Confirm Password</label><input type="password" id="reg-confirm" placeholder="Confirm your password"></div>
+            <div class="form-check"><input type="checkbox" id="reg-terms"><label for="reg-terms">I agree to the Terms of Service and Rules</label></div>
+            <button class="btn-primary" id="btn-register">Create Account</button>
+            <p class="form-link">Already have an account? <a onclick="showPage('login')">Login here</a></p>
+        </div>
+    </section>
+</div>
+
+<!-- ===== ACCOUNT DASHBOARD ===== -->
+<div class="page" id="page-account">
+    <div class="sidebar-mobile-nav">
+        <a class="active" onclick="showPage('account')">Dashboard</a>
+        <a onclick="showPage('notifications')">Notifications</a>
+        <a onclick="showPage('report')">Report Player</a>
+        <a onclick="showPage('my-reports')">My Reports</a>
+        <a onclick="showPage('appeals')">Ban Appeals</a>
+        <a onclick="showPage('my-appeals')">My Appeals</a>
+    </div>
+    <div class="dashboard-layout">
+        <div class="sidebar">
+            <div class="sidebar-title">Account</div>
+            <ul class="sidebar-links">
+                <li><a class="active" onclick="showPage('account')">Dashboard</a></li>
+                <li><a onclick="showPage('notifications')">Notifications</a></li>
+                <li><a onclick="showPage('report')">Report Player</a></li>
+                <li><a onclick="showPage('my-reports')">My Reports</a></li>
+                <li><a onclick="showPage('appeals')">Ban Appeals</a></li>
+                <li><a onclick="showPage('my-appeals')">My Appeals</a></li>
+                <li><a onclick="showPage('home')">Back to Home</a></li>
+            </ul>
+        </div>
+        <div class="dashboard-content">
+            <div class="dashboard-header"><h1>Account Dashboard</h1><p>Welcome back!</p></div>
+
+            <div class="card" style="text-align:center;">
+                <h2>Profile</h2>
+                <div class="alert alert-error" style="display:none;" id="profile-error"></div>
+                <div class="alert alert-success" style="display:none;" id="profile-success"></div>
+                <div class="profile-avatar-placeholder" id="profile-preview">?</div>
+                <p style="margin-top:16px; color:#a0a0b0;">Your ConvoyMP ID</p>
+                <p class="convoy-id-display" id="profile-convoy-id">CMP-XXXXX</p>
+            </div>
+
+            <div class="card-grid">
+                <div class="card card-stat"><h3 id="profile-distance">0</h3><p>Distance (km)</p></div>
+                <div class="card card-stat"><h3 id="profile-jobs">0</h3><p>Jobs Done</p></div>
+                <div class="card card-stat"><h3 id="profile-reports">0</h3><p>Reports Sent</p></div>
+                <div class="card card-stat"><h3 id="profile-bans">0</h3><p>Bans</p></div>
+            </div>
+
+            <div class="card">
+                <h2>Profile Settings</h2>
+                <div class="form-row">
+                    <div class="form-group"><label>Username</label><input type="text" id="profile-username" disabled></div>
+                    <div class="form-group"><label>Email</label><input type="email" id="profile-email" disabled></div>
+                </div>
+                <div class="form-row">
+                    <div class="form-group"><label>First Name</label><input type="text" id="profile-firstname"></div>
+                    <div class="form-group"><label>Last Name</label><input type="text" id="profile-lastname"></div>
+                </div>
+                <div class="form-group"><label>Bio</label><textarea id="profile-bio" placeholder="Tell us about yourself..."></textarea></div>
+                <button class="btn-primary" id="btn-save-profile">Save Changes</button>
+            </div>
+
+            <div class="card">
+                <h2>Steam Account</h2>
+                <p style="color:#a0a0b0;" id="profile-steam">Not linked</p>
+                <button class="btn-secondary" style="margin-top:12px;" onclick="alert('Steam linking coming soon!')">Link Steam Account</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- ===== REPORT ===== -->
+<div class="page" id="page-report">
+    <div class="sidebar-mobile-nav">
+        <a onclick="showPage('account')">Dashboard</a>
+        <a class="active" onclick="showPage('report')">Report Player</a>
+        <a onclick="showPage('my-reports')">My Reports</a>
+        <a onclick="showPage('appeals')">Ban Appeals</a>
+        <a onclick="showPage('my-appeals')">My Appeals</a>
+    </div>
+    <div class="dashboard-layout">
+        <div class="sidebar">
+            <div class="sidebar-title">Account</div>
+            <ul class="sidebar-links">
+                <li><a onclick="showPage('account')">Dashboard</a></li>
+                <li><a onclick="showPage('notifications')">Notifications</a></li>
+                <li><a class="active" onclick="showPage('report')">Report Player</a></li>
+                <li><a onclick="showPage('my-reports')">My Reports</a></li>
+                <li><a onclick="showPage('appeals')">Ban Appeals</a></li>
+                <li><a onclick="showPage('my-appeals')">My Appeals</a></li>
+                <li><a onclick="showPage('home')">Back to Home</a></li>
+            </ul>
+        </div>
+        <div class="dashboard-content">
+            <div class="dashboard-header"><h1>Report a Player</h1><p>Fill in the form below to submit a report.</p></div>
+            <div class="card">
+                <div class="alert alert-info">Reports are reviewed by our moderation team within 48 hours. Check the Rules page for details on the report system.</div>
+                <div class="alert alert-error" style="display:none;" id="report-error"></div>
+                <div class="alert alert-success" style="display:none;" id="report-success"></div>
+                <div class="form-group"><label>Offender Username</label><input type="text" id="report-offender" placeholder="Enter the player's username"></div>
+                <div class="form-row">
+                    <div class="form-group"><label>Server</label><select id="report-server"><option value="">Select server...</option><option>Europe 1</option><option>Europe 2</option><option>UK 1</option><option>US East 1</option><option>US West 1</option></select></div>
+                    <div class="form-group"><label>Rule Broken</label><select id="report-rule"><option value="">Select rule...</option><option>Cheating / Hacking</option><option>Griefing / Ramming</option><option>Blocking</option><option>Harassment</option><option>Speed Hacking</option><option>Inappropriate Chat</option><option>Other</option></select></div>
+                </div>
+                <div class="form-group"><label>Date &amp; Time of Incident</label><input type="datetime-local" id="report-datetime"></div>
+                <div class="form-group"><label>Description</label><textarea id="report-description" placeholder="Describe what happened in detail..."></textarea></div>
+                <button class="btn-primary" id="btn-submit-report">Submit Report</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- ===== MY REPORTS ===== -->
+<div class="page" id="page-my-reports">
+    <div class="sidebar-mobile-nav">
+        <a onclick="showPage('account')">Dashboard</a>
+        <a onclick="showPage('report')">Report Player</a>
+        <a class="active" onclick="showPage('my-reports')">My Reports</a>
+        <a onclick="showPage('appeals')">Ban Appeals</a>
+        <a onclick="showPage('my-appeals')">My Appeals</a>
+    </div>
+    <div class="dashboard-layout">
+        <div class="sidebar">
+            <div class="sidebar-title">Account</div>
+            <ul class="sidebar-links">
+                <li><a onclick="showPage('account')">Dashboard</a></li>
+                <li><a onclick="showPage('notifications')">Notifications</a></li>
+                <li><a onclick="showPage('report')">Report Player</a></li>
+                <li><a class="active" onclick="showPage('my-reports')">My Reports</a></li>
+                <li><a onclick="showPage('appeals')">Ban Appeals</a></li>
+                <li><a onclick="showPage('my-appeals')">My Appeals</a></li>
+                <li><a onclick="showPage('home')">Back to Home</a></li>
+            </ul>
+        </div>
+        <div class="dashboard-content">
+            <div class="dashboard-header"><h1>My Reports</h1><p>Reports you have submitted.</p></div>
+            <div class="card">
+                <table class="data-table">
+                    <thead><tr><th>Date</th><th>Offender</th><th>Rule</th><th>Status</th></tr></thead>
+                    <tbody id="my-reports-list"><tr><td colspan="4" style="color:#a0a0b0;text-align:center;padding:20px;">Loading...</td></tr></tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- ===== APPEALS ===== -->
+<div class="page" id="page-appeals">
+    <div class="sidebar-mobile-nav">
+        <a onclick="showPage('account')">Dashboard</a>
+        <a onclick="showPage('report')">Report Player</a>
+        <a onclick="showPage('my-reports')">My Reports</a>
+        <a class="active" onclick="showPage('appeals')">Ban Appeals</a>
+        <a onclick="showPage('my-appeals')">My Appeals</a>
+    </div>
+    <div class="dashboard-layout">
+        <div class="sidebar">
+            <div class="sidebar-title">Account</div>
+            <ul class="sidebar-links">
+                <li><a onclick="showPage('account')">Dashboard</a></li>
+                <li><a onclick="showPage('notifications')">Notifications</a></li>
+                <li><a onclick="showPage('report')">Report Player</a></li>
+                <li><a onclick="showPage('my-reports')">My Reports</a></li>
+                <li><a class="active" onclick="showPage('appeals')">Ban Appeals</a></li>
+                <li><a onclick="showPage('my-appeals')">My Appeals</a></li>
+                <li><a onclick="showPage('home')">Back to Home</a></li>
+            </ul>
+        </div>
+        <div class="dashboard-content">
+            <div class="dashboard-header"><h1>Ban Appeals</h1><p>Submit an appeal if you believe your ban was unfair.</p></div>
+            <div class="card">
+                <div class="alert alert-error" style="display:none;" id="appeal-error"></div>
+                <div class="alert alert-success" style="display:none;" id="appeal-success"></div>
+                <h2>Submit New Appeal</h2>
+                <div class="form-group"><label>Ban Reason</label><input type="text" id="appeal-reason" placeholder="Why were you banned?"></div>
+                <div class="form-group"><label>Your Explanation</label><textarea id="appeal-explanation" placeholder="Explain why you believe the ban should be lifted..."></textarea></div>
+                <button class="btn-primary" id="btn-submit-appeal">Submit Appeal</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- ===== MY APPEALS ===== -->
+<div class="page" id="page-my-appeals">
+    <div class="sidebar-mobile-nav">
+        <a onclick="showPage('account')">Dashboard</a>
+        <a onclick="showPage('report')">Report Player</a>
+        <a onclick="showPage('my-reports')">My Reports</a>
+        <a onclick="showPage('appeals')">Ban Appeals</a>
+        <a class="active" onclick="showPage('my-appeals')">My Appeals</a>
+    </div>
+    <div class="dashboard-layout">
+        <div class="sidebar">
+            <div class="sidebar-title">Account</div>
+            <ul class="sidebar-links">
+                <li><a onclick="showPage('account')">Dashboard</a></li>
+                <li><a onclick="showPage('notifications')">Notifications</a></li>
+                <li><a onclick="showPage('report')">Report Player</a></li>
+                <li><a onclick="showPage('my-reports')">My Reports</a></li>
+                <li><a onclick="showPage('appeals')">Ban Appeals</a></li>
+                <li><a class="active" onclick="showPage('my-appeals')">My Appeals</a></li>
+                <li><a onclick="showPage('home')">Back to Home</a></li>
+            </ul>
+        </div>
+        <div class="dashboard-content">
+            <div class="dashboard-header"><h1>My Appeals</h1><p>Appeals you have submitted.</p></div>
+            <div class="card">
+                <table class="data-table">
+                    <thead><tr><th>Date</th><th>Ban Reason</th><th>Status</th></tr></thead>
+                    <tbody id="my-appeals-list"><tr><td colspan="3" style="color:#a0a0b0;text-align:center;padding:20px;">Loading...</td></tr></tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- ===== NOTIFICATIONS ===== -->
+<div class="page" id="page-notifications">
+    <div class="sidebar-mobile-nav">
+        <a onclick="showPage('account')">Dashboard</a>
+        <a class="active" onclick="showPage('notifications')">Notifications</a>
+        <a onclick="showPage('report')">Report Player</a>
+        <a onclick="showPage('my-reports')">My Reports</a>
+        <a onclick="showPage('appeals')">Ban Appeals</a>
+        <a onclick="showPage('my-appeals')">My Appeals</a>
+    </div>
+    <div class="dashboard-layout">
+        <div class="sidebar">
+            <div class="sidebar-title">Account</div>
+            <ul class="sidebar-links">
+                <li><a onclick="showPage('account')">Dashboard</a></li>
+                <li><a class="active" onclick="showPage('notifications')">Notifications</a></li>
+                <li><a onclick="showPage('report')">Report Player</a></li>
+                <li><a onclick="showPage('my-reports')">My Reports</a></li>
+                <li><a onclick="showPage('appeals')">Ban Appeals</a></li>
+                <li><a onclick="showPage('my-appeals')">My Appeals</a></li>
+                <li><a onclick="showPage('home')">Back to Home</a></li>
+            </ul>
+        </div>
+        <div class="dashboard-content">
+            <div class="dashboard-header"><h1>Notifications</h1><p>Your recent notifications.</p></div>
+            <p style="color:#a0a0b0;">No notifications yet.</p>
+            <div class="card">
+                <h2>Email Preferences</h2>
+                <div class="form-check"><input type="checkbox" id="email-news" checked><label for="email-news">Receive news and updates</label></div>
+                <div class="form-check"><input type="checkbox" id="email-reports" checked><label for="email-reports">Report status updates</label></div>
+                <div class="form-check"><input type="checkbox" id="email-events"><label for="email-events">Event notifications</label></div>
+                <button class="btn-primary" onclick="alert('Preferences saved!')">Save Preferences</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- ===== ADMIN DASHBOARD ===== -->
+<div class="page" id="page-admin">
+    <div class="sidebar-mobile-nav">
+        <a class="active" onclick="showPage('admin')">Dashboard</a>
+        <a onclick="showPage('admin-users')">Users</a>
+        <a onclick="showPage('admin-reports')">Reports</a>
+        <a onclick="showPage('admin-appeals')">Appeals</a>
+        <a onclick="showPage('admin-logs')">Logs</a>
+    </div>
+    <div class="dashboard-layout">
+        <div class="sidebar">
+            <div class="sidebar-title">Admin Panel</div>
+            <ul class="sidebar-links">
+                <li><a class="active" onclick="showPage('admin')">Dashboard</a></li>
+                <li><a onclick="showPage('admin-users')">Users</a></li>
+                <li><a onclick="showPage('admin-reports')">Reports</a></li>
+                <li><a onclick="showPage('admin-appeals')">Appeals</a></li>
+                <li><a onclick="showPage('admin-logs')">Logs</a></li>
+                <li><a onclick="showPage('home')">Back to Home</a></li>
+            </ul>
+        </div>
+        <div class="dashboard-content">
+            <div class="dashboard-header"><h1>Admin Dashboard</h1><p>Overview of ConvoyMP platform.</p></div>
+            <div class="card-grid" id="admin-stats">
+                <div class="card card-stat"><h3>0</h3><p>Total Users</p></div>
+                <div class="card card-stat"><h3>0</h3><p>Open Reports</p></div>
+                <div class="card card-stat"><h3>0</h3><p>Team Members</p></div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- ===== ADMIN USERS ===== -->
+<div class="page" id="page-admin-users">
+    <div class="sidebar-mobile-nav">
+        <a onclick="showPage('admin')">Dashboard</a>
+        <a class="active" onclick="showPage('admin-users')">Users</a>
+        <a onclick="showPage('admin-reports')">Reports</a>
+        <a onclick="showPage('admin-appeals')">Appeals</a>
+        <a onclick="showPage('admin-logs')">Logs</a>
+    </div>
+    <div class="dashboard-layout">
+        <div class="sidebar">
+            <div class="sidebar-title">Admin Panel</div>
+            <ul class="sidebar-links">
+                <li><a onclick="showPage('admin')">Dashboard</a></li>
+                <li><a class="active" onclick="showPage('admin-users')">Users</a></li>
+                <li><a onclick="showPage('admin-reports')">Reports</a></li>
+                <li><a onclick="showPage('admin-appeals')">Appeals</a></li>
+                <li><a onclick="showPage('admin-logs')">Logs</a></li>
+                <li><a onclick="showPage('home')">Back to Home</a></li>
+            </ul>
+        </div>
+        <div class="dashboard-content">
+            <div class="dashboard-header"><h1>User Management</h1><p>View, edit, and manage all ConvoyMP users.</p></div>
+            <div class="card">
+                <table class="data-table">
+                    <thead><tr><th>Username</th><th>Email</th><th>Role</th><th>Status</th><th>Actions</th></tr></thead>
+                    <tbody id="admin-users-list"><tr><td colspan="5" style="color:#a0a0b0;text-align:center;padding:20px;">Loading...</td></tr></tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- ===== ADMIN REPORTS ===== -->
+<div class="page" id="page-admin-reports">
+    <div class="sidebar-mobile-nav">
+        <a onclick="showPage('admin')">Dashboard</a>
+        <a onclick="showPage('admin-users')">Users</a>
+        <a class="active" onclick="showPage('admin-reports')">Reports</a>
+        <a onclick="showPage('admin-appeals')">Appeals</a>
+        <a onclick="showPage('admin-logs')">Logs</a>
+    </div>
+    <div class="dashboard-layout">
+        <div class="sidebar">
+            <div class="sidebar-title">Admin Panel</div>
+            <ul class="sidebar-links">
+                <li><a onclick="showPage('admin')">Dashboard</a></li>
+                <li><a onclick="showPage('admin-users')">Users</a></li>
+                <li><a class="active" onclick="showPage('admin-reports')">Reports</a></li>
+                <li><a onclick="showPage('admin-appeals')">Appeals</a></li>
+                <li><a onclick="showPage('admin-logs')">Logs</a></li>
+                <li><a onclick="showPage('home')">Back to Home</a></li>
+            </ul>
+        </div>
+        <div class="dashboard-content">
+            <div class="dashboard-header"><h1>Report Management</h1><p>Review and handle player reports.</p></div>
+            <div class="card">
+                <table class="data-table">
+                    <thead><tr><th>Date</th><th>Reporter</th><th>Offender</th><th>Rule</th><th>Status</th><th>Actions</th></tr></thead>
+                    <tbody id="admin-reports-list"><tr><td colspan="6" style="color:#a0a0b0;text-align:center;padding:20px;">Loading...</td></tr></tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- ===== ADMIN APPEALS ===== -->
+<div class="page" id="page-admin-appeals">
+    <div class="sidebar-mobile-nav">
+        <a onclick="showPage('admin')">Dashboard</a>
+        <a onclick="showPage('admin-users')">Users</a>
+        <a onclick="showPage('admin-reports')">Reports</a>
+        <a class="active" onclick="showPage('admin-appeals')">Appeals</a>
+        <a onclick="showPage('admin-logs')">Logs</a>
+    </div>
+    <div class="dashboard-layout">
+        <div class="sidebar">
+            <div class="sidebar-title">Admin Panel</div>
+            <ul class="sidebar-links">
+                <li><a onclick="showPage('admin')">Dashboard</a></li>
+                <li><a onclick="showPage('admin-users')">Users</a></li>
+                <li><a onclick="showPage('admin-reports')">Reports</a></li>
+                <li><a class="active" onclick="showPage('admin-appeals')">Appeals</a></li>
+                <li><a onclick="showPage('admin-logs')">Logs</a></li>
+                <li><a onclick="showPage('home')">Back to Home</a></li>
+            </ul>
+        </div>
+        <div class="dashboard-content">
+            <div class="dashboard-header"><h1>Appeal Management</h1><p>Review and handle ban appeals.</p></div>
+            <div class="card">
+                <table class="data-table">
+                    <thead><tr><th>Date</th><th>User</th><th>Ban Reason</th><th>Status</th><th>Actions</th></tr></thead>
+                    <tbody id="admin-appeals-list"><tr><td colspan="5" style="color:#a0a0b0;text-align:center;padding:20px;">Loading...</td></tr></tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- ===== ADMIN LOGS ===== -->
+<div class="page" id="page-admin-logs">
+    <div class="sidebar-mobile-nav">
+        <a onclick="showPage('admin')">Dashboard</a>
+        <a onclick="showPage('admin-users')">Users</a>
+        <a onclick="showPage('admin-reports')">Reports</a>
+        <a onclick="showPage('admin-appeals')">Appeals</a>
+        <a class="active" onclick="showPage('admin-logs')">Logs</a>
+    </div>
+    <div class="dashboard-layout">
+        <div class="sidebar">
+            <div class="sidebar-title">Admin Panel</div>
+            <ul class="sidebar-links">
+                <li><a onclick="showPage('admin')">Dashboard</a></li>
+                <li><a onclick="showPage('admin-users')">Users</a></li>
+                <li><a onclick="showPage('admin-reports')">Reports</a></li>
+                <li><a onclick="showPage('admin-appeals')">Appeals</a></li>
+                <li><a class="active" onclick="showPage('admin-logs')">Logs</a></li>
+                <li><a onclick="showPage('home')">Back to Home</a></li>
+            </ul>
+        </div>
+        <div class="dashboard-content">
+            <div class="dashboard-header"><h1>System Logs</h1><p>Full activity log of all platform events.</p></div>
+            <div class="card" id="admin-logs-list"><p style="color:#a0a0b0;text-align:center;padding:20px;">No logs yet.</p></div>
+        </div>
+    </div>
+</div>
+
+<!-- ===== FOOTER ===== -->
+<footer class="footer">
+    <div class="footer-main">
+        <div>
+            <div class="footer-brand">ConvoyMP</div>
+            <p class="footer-desc">ConvoyMP is a free multiplayer modification for Euro Truck Simulator 2.</p>
+        </div>
+        <div>
+            <div class="footer-heading">Quick Links</div>
+            <ul class="footer-links">
+                <li><a onclick="showPage('download')">Download</a></li>
+                <li><a onclick="showPage('rules')">Rules</a></li>
+                <li><a onclick="showPage('servers')">Server Status</a></li>
+                <li><a onclick="showPage('support')">Support</a></li>
+            </ul>
+        </div>
+        <div>
+            <div class="footer-heading">Community</div>
+            <ul class="footer-links">
+                <li><a onclick="showPage('news')">News</a></li>
+                <li><a onclick="showPage('community')">Community Chat</a></li>
+                <li><a onclick="showPage('players')">Find Players</a></li>
+            </ul>
+        </div>
+        <div>
+            <div class="footer-heading">Legal</div>
+            <ul class="footer-links">
+                <li><a onclick="showPage('rules')">Rules</a></li>
+            </ul>
+        </div>
+    </div>
+    <div class="footer-bottom">&copy; 2026 ConvoyMP. All rights reserved. ConvoyMP is not affiliated with SCS Software.</div>
+</footer>
+
+</body>
+</html>
