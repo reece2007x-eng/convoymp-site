@@ -83,7 +83,7 @@ document.addEventListener('DOMContentLoaded', function() {
     });
     document.getElementById('btn-emoji').addEventListener('click', toggleEmojiPicker);
     document.getElementById('btn-download-launcher').addEventListener('click', function() {
-        alert('Download will be available soon!');
+        window.location.href = 'ConvoyMPLauncher.exe';
     });
 
     document.getElementById('btn-search-player').addEventListener('click', function() {
@@ -575,7 +575,7 @@ function saveNewsPost(title, content) {
     return db.collection('news').add({
         title: title, content: content,
         authorId: currentUser.uid,
-        authorName: currentUserProfile.username,
+        authorName: currentUserProfile.username || currentUserProfile.displayName || 'Unknown',
         createdAt: firebase.firestore.FieldValue.serverTimestamp()
     })
     .then(function() {
