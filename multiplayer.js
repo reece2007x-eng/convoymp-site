@@ -16,11 +16,10 @@ var MP = (function() {
     var positionInterval = null;
 
     var SERVERS = {
-        'eu1': { name: 'Europe 1', location: 'Frankfurt, DE', region: 'EU', maxPlayers: 200 },
-        'eu2': { name: 'Europe 2', location: 'Amsterdam, NL', region: 'EU', maxPlayers: 200 },
-        'uk1': { name: 'UK 1', location: 'London, UK', region: 'EU', maxPlayers: 100 },
-        'us1': { name: 'US East 1', location: 'New York, US', region: 'US', maxPlayers: 200 },
-        'us2': { name: 'US West 1', location: 'Los Angeles, US', region: 'US', maxPlayers: 200 },
+        'sim1': { name: 'Simulation 1', location: 'Frankfurt, DE', region: 'EU', maxPlayers: 200 },
+        'sim2': { name: 'Simulation 2', location: 'Amsterdam, NL', region: 'EU', maxPlayers: 200 },
+        'arc1': { name: 'Arcade 1', location: 'London, UK', region: 'EU', maxPlayers: 100 },
+        'arc2': { name: 'Arcade 2', location: 'New York, US', region: 'US', maxPlayers: 100 },
     };
 
     // =============================================

@@ -189,13 +189,7 @@
             <div class="game-conn-left">
                 <span class="game-status-dot" id="game-status-dot"></span>
                 <span id="game-status-text">Disconnected</span>
-                <select id="game-server-select" class="game-select">
-                    <option value="eu1">Europe 1 - Frankfurt</option>
-                    <option value="eu2">Europe 2 - Amsterdam</option>
-                    <option value="uk1">UK 1 - London</option>
-                    <option value="us1">US East 1 - New York</option>
-                    <option value="us2">US West 1 - Los Angeles</option>
-                </select>
+                <select id="game-server-select" class="game-select"></select>
                 <button class="btn-primary game-btn" id="btn-game-connect" onclick="gameConnect()">Connect</button>
             </div>
             <div class="game-conn-right">
@@ -600,7 +594,7 @@
                 <div class="alert alert-success" style="display:none;" id="report-success"></div>
                 <div class="form-group"><label>Offender Username</label><input type="text" id="report-offender" placeholder="Enter the player's username"></div>
                 <div class="form-row">
-                    <div class="form-group"><label>Server</label><select id="report-server"><option value="">Select server...</option><option>Europe 1</option><option>Europe 2</option><option>UK 1</option><option>US East 1</option><option>US West 1</option></select></div>
+                    <div class="form-group"><label>Server</label><select id="report-server"><option value="">Select server...</option></select></div>
                     <div class="form-group"><label>Rule Broken</label><select id="report-rule"><option value="">Select rule...</option><option>Cheating / Hacking</option><option>Griefing / Ramming</option><option>Blocking</option><option>Harassment</option><option>Speed Hacking</option><option>Inappropriate Chat</option><option>Other</option></select></div>
                 </div>
                 <div class="form-group"><label>Date &amp; Time of Incident</label><input type="datetime-local" id="report-datetime"></div>
@@ -757,6 +751,7 @@
     <div class="sidebar-mobile-nav">
         <a class="active" onclick="showPage('admin')">Dashboard</a>
         <a onclick="showPage('admin-users')">Users</a>
+        <a onclick="showPage('admin-servers')">Servers</a>
         <a onclick="showPage('admin-reports')">Reports</a>
         <a onclick="showPage('admin-appeals')">Appeals</a>
         <a onclick="showPage('admin-logs')">Logs</a>
@@ -767,6 +762,7 @@
             <ul class="sidebar-links">
                 <li><a class="active" onclick="showPage('admin')">Dashboard</a></li>
                 <li><a onclick="showPage('admin-users')">Users</a></li>
+                <li><a onclick="showPage('admin-servers')">Servers</a></li>
                 <li><a onclick="showPage('admin-reports')">Reports</a></li>
                 <li><a onclick="showPage('admin-appeals')">Appeals</a></li>
                 <li><a onclick="showPage('admin-logs')">Logs</a></li>
@@ -789,6 +785,7 @@
     <div class="sidebar-mobile-nav">
         <a onclick="showPage('admin')">Dashboard</a>
         <a class="active" onclick="showPage('admin-users')">Users</a>
+        <a onclick="showPage('admin-servers')">Servers</a>
         <a onclick="showPage('admin-reports')">Reports</a>
         <a onclick="showPage('admin-appeals')">Appeals</a>
         <a onclick="showPage('admin-logs')">Logs</a>
@@ -799,6 +796,7 @@
             <ul class="sidebar-links">
                 <li><a onclick="showPage('admin')">Dashboard</a></li>
                 <li><a class="active" onclick="showPage('admin-users')">Users</a></li>
+                <li><a onclick="showPage('admin-servers')">Servers</a></li>
                 <li><a onclick="showPage('admin-reports')">Reports</a></li>
                 <li><a onclick="showPage('admin-appeals')">Appeals</a></li>
                 <li><a onclick="showPage('admin-logs')">Logs</a></li>
@@ -822,6 +820,7 @@
     <div class="sidebar-mobile-nav">
         <a onclick="showPage('admin')">Dashboard</a>
         <a onclick="showPage('admin-users')">Users</a>
+        <a onclick="showPage('admin-servers')">Servers</a>
         <a class="active" onclick="showPage('admin-reports')">Reports</a>
         <a onclick="showPage('admin-appeals')">Appeals</a>
         <a onclick="showPage('admin-logs')">Logs</a>
@@ -832,6 +831,7 @@
             <ul class="sidebar-links">
                 <li><a onclick="showPage('admin')">Dashboard</a></li>
                 <li><a onclick="showPage('admin-users')">Users</a></li>
+                <li><a onclick="showPage('admin-servers')">Servers</a></li>
                 <li><a class="active" onclick="showPage('admin-reports')">Reports</a></li>
                 <li><a onclick="showPage('admin-appeals')">Appeals</a></li>
                 <li><a onclick="showPage('admin-logs')">Logs</a></li>
@@ -855,6 +855,7 @@
     <div class="sidebar-mobile-nav">
         <a onclick="showPage('admin')">Dashboard</a>
         <a onclick="showPage('admin-users')">Users</a>
+        <a onclick="showPage('admin-servers')">Servers</a>
         <a onclick="showPage('admin-reports')">Reports</a>
         <a class="active" onclick="showPage('admin-appeals')">Appeals</a>
         <a onclick="showPage('admin-logs')">Logs</a>
@@ -865,6 +866,7 @@
             <ul class="sidebar-links">
                 <li><a onclick="showPage('admin')">Dashboard</a></li>
                 <li><a onclick="showPage('admin-users')">Users</a></li>
+                <li><a onclick="showPage('admin-servers')">Servers</a></li>
                 <li><a onclick="showPage('admin-reports')">Reports</a></li>
                 <li><a class="active" onclick="showPage('admin-appeals')">Appeals</a></li>
                 <li><a onclick="showPage('admin-logs')">Logs</a></li>
@@ -883,11 +885,66 @@
     </div>
 </div>
 
+<!-- ===== ADMIN SERVERS ===== -->
+<div class="page" id="page-admin-servers">
+    <div class="sidebar-mobile-nav">
+        <a onclick="showPage('admin')">Dashboard</a>
+        <a onclick="showPage('admin-users')">Users</a>
+        <a class="active" onclick="showPage('admin-servers')">Servers</a>
+        <a onclick="showPage('admin-reports')">Reports</a>
+        <a onclick="showPage('admin-appeals')">Appeals</a>
+        <a onclick="showPage('admin-logs')">Logs</a>
+    </div>
+    <div class="dashboard-layout">
+        <div class="sidebar">
+            <div class="sidebar-title">Admin Panel</div>
+            <ul class="sidebar-links">
+                <li><a onclick="showPage('admin')">Dashboard</a></li>
+                <li><a onclick="showPage('admin-users')">Users</a></li>
+                <li><a class="active" onclick="showPage('admin-servers')">Servers</a></li>
+                <li><a onclick="showPage('admin-reports')">Reports</a></li>
+                <li><a onclick="showPage('admin-appeals')">Appeals</a></li>
+                <li><a onclick="showPage('admin-logs')">Logs</a></li>
+                <li><a onclick="showPage('home')">Back to Home</a></li>
+            </ul>
+        </div>
+        <div class="dashboard-content">
+            <div class="dashboard-header"><h1>Server Management</h1><p>Add, edit, and manage ConvoyMP servers.</p></div>
+            <div class="card" style="margin-bottom:24px;">
+                <h2 id="server-form-title">Add Server</h2>
+                <div class="alert alert-error" style="display:none;" id="server-error"></div>
+                <div class="alert alert-success" style="display:none;" id="server-success"></div>
+                <input type="hidden" id="server-edit-id" value="">
+                <div class="form-row">
+                    <div class="form-group"><label>Server Name</label><input type="text" id="server-name-input" placeholder="e.g. Simulation 1"></div>
+                    <div class="form-group"><label>Location</label><input type="text" id="server-location-input" placeholder="e.g. Frankfurt, DE"></div>
+                </div>
+                <div class="form-row">
+                    <div class="form-group"><label>Max Players</label><input type="number" id="server-max-input" placeholder="200" value="200"></div>
+                    <div class="form-group"><label>Status</label><select id="server-status-input"><option value="online">Online</option><option value="busy">Busy</option><option value="offline">Offline</option></select></div>
+                </div>
+                <div style="display:flex; gap:8px;">
+                    <button class="btn-primary" id="btn-save-server" onclick="saveServer()">Add Server</button>
+                    <button class="btn-secondary" id="btn-cancel-edit-server" onclick="cancelEditServer()" style="display:none;">Cancel</button>
+                </div>
+            </div>
+            <div class="card">
+                <h2>Current Servers</h2>
+                <table class="data-table">
+                    <thead><tr><th>Server</th><th>Location</th><th>Players</th><th>Status</th><th>Actions</th></tr></thead>
+                    <tbody id="admin-servers-list"><tr><td colspan="5" style="color:#a0a0b0;text-align:center;padding:20px;">Loading...</td></tr></tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+
 <!-- ===== ADMIN LOGS ===== -->
 <div class="page" id="page-admin-logs">
     <div class="sidebar-mobile-nav">
         <a onclick="showPage('admin')">Dashboard</a>
         <a onclick="showPage('admin-users')">Users</a>
+        <a onclick="showPage('admin-servers')">Servers</a>
         <a onclick="showPage('admin-reports')">Reports</a>
         <a onclick="showPage('admin-appeals')">Appeals</a>
         <a class="active" onclick="showPage('admin-logs')">Logs</a>
@@ -898,6 +955,7 @@
             <ul class="sidebar-links">
                 <li><a onclick="showPage('admin')">Dashboard</a></li>
                 <li><a onclick="showPage('admin-users')">Users</a></li>
+                <li><a onclick="showPage('admin-servers')">Servers</a></li>
                 <li><a onclick="showPage('admin-reports')">Reports</a></li>
                 <li><a onclick="showPage('admin-appeals')">Appeals</a></li>
                 <li><a class="active" onclick="showPage('admin-logs')">Logs</a></li>

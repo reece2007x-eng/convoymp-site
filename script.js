@@ -108,6 +108,9 @@ document.addEventListener('DOMContentLoaded', function() {
     });
 
     loadHomeStats();
+    loadServers();
+    loadPlayerCount();
+    populateServerDropdowns();
 
     if (typeof MP !== 'undefined') {
         MP.init();
@@ -870,6 +873,173 @@ function loadPlayerCount() {
         });
 }
 
+// ==========================================
+// ADMIN SERVER MANAGEMENT
+// ==========================================
+
+function loadAdminServers() {
+    var c = document.getElementById('admin-servers-list');
+    if (!c) return;
+    db.collection('servers').orderBy('name').get()
+        .then(function(snap) {
+            if (snap.empty) {
+                c.innerHTML = '<tr><td colspan="5" style="color:#a0a0b0;text-align:center;padding:20px;">No servers found. Seeding default servers...</td></tr>';
+                seedServers().then(function() { loadAdminServers(); loadServers(); populateServerDropdowns(); });
+                return;
+            }
+            var html = '';
+            snap.forEach(function(doc) {
+                var s = doc.data(); var sid = doc.id;
+                var sc = s.status === 'online' ? 'badge-green' : s.status === 'busy' ? 'badge-yellow' : 'badge-red';
+                html += '<tr>';
+                html += '<td>' + esc(s.name) + '</td>';
+                html += '<td>' + esc(s.location) + '</td>';
+                html += '<td>' + (s.currentPlayers || 0) + ' / ' + (s.maxPlayers || 0) + '</td>';
+                html += '<td><span class="badge ' + sc + '">' + esc(s.status) + '</span></td>';
+                html += '<td>';
+                html += '<a class="link-red" onclick="editServer(\'' + sid + '\')">Edit</a> | ';
+                html += '<a class="link-red" onclick="deleteServer(\'' + sid + '\',\'' + esc(s.name) + '\')">Delete</a>';
+                html += '</td></tr>';
+            });
+            c.innerHTML = html;
+        });
+}
+
+function saveServer() {
+    var editId = document.getElementById('server-edit-id').value;
+    var name = document.getElementById('server-name-input').value.trim();
+    var location = document.getElementById('server-location-input').value.trim();
+    var maxPlayers = parseInt(document.getElementById('server-max-input').value) || 200;
+    var status = document.getElementById('server-status-input').value;
+    var err = document.getElementById('server-error');
+    var ok = document.getElementById('server-success');
+    hideAlert(err); hideAlert(ok);
+
+    if (!name || !location) { showAlert(err, 'Please fill in server name and location.'); return; }
+
+    var data = {
+        name: name, location: location, maxPlayers: maxPlayers,
+        currentPlayers: 0, status: status,
+        updatedAt: firebase.firestore.FieldValue.serverTimestamp()
+    };
+
+    var promise;
+    if (editId) {
+        data.createdAt = undefined;
+        promise = db.collection('servers').doc(editId).update(data);
+    } else {
+        data.createdAt = firebase.firestore.FieldValue.serverTimestamp();
+        promise = db.collection('servers').add(data);
+    }
+
+    promise.then(function() {
+        showAlert(ok, editId ? 'Server updated!' : 'Server added!');
+        addLog('SERVER', (editId ? 'Updated' : 'Added') + ' server: ' + name);
+        cancelEditServer();
+        loadAdminServers();
+        loadServers();
+    }).catch(function(e) { showAlert(err, e.message); });
+}
+
+function editServer(sid) {
+    db.collection('servers').doc(sid).get().then(function(doc) {
+        if (!doc.exists) return;
+        var s = doc.data();
+        document.getElementById('server-edit-id').value = sid;
+        document.getElementById('server-name-input').value = s.name || '';
+        document.getElementById('server-location-input').value = s.location || '';
+        document.getElementById('server-max-input').value = s.maxPlayers || 200;
+        document.getElementById('server-status-input').value = s.status || 'online';
+        document.getElementById('server-form-title').textContent = 'Edit Server';
+        document.getElementById('btn-save-server').textContent = 'Save Changes';
+        document.getElementById('btn-cancel-edit-server').style.display = 'inline-block';
+    });
+}
+
+function cancelEditServer() {
+    document.getElementById('server-edit-id').value = '';
+    document.getElementById('server-name-input').value = '';
+    document.getElementById('server-location-input').value = '';
+    document.getElementById('server-max-input').value = '200';
+    document.getElementById('server-status-input').value = 'online';
+    document.getElementById('server-form-title').textContent = 'Add Server';
+    document.getElementById('btn-save-server').textContent = 'Add Server';
+    document.getElementById('btn-cancel-edit-server').style.display = 'none';
+}
+
+function deleteServer(sid, name) {
+    if (!confirm('Delete server "' + name + '"?')) return;
+    db.collection('servers').doc(sid).delete()
+        .then(function() {
+            addLog('SERVER', 'Deleted server: ' + name);
+            loadAdminServers();
+            loadServers();
+        });
+}
+
+// ==========================================
+// SEED SERVERS - Run once to populate Firestore
+// ==========================================
+
+function seedServers() {
+    var servers = [
+        { id: 'sim1', name: 'Simulation 1', location: 'Frankfurt, DE', maxPlayers: 200, currentPlayers: 0, status: 'online' },
+        { id: 'sim2', name: 'Simulation 2', location: 'Amsterdam, NL', maxPlayers: 200, currentPlayers: 0, status: 'online' },
+        { id: 'arc1', name: 'Arcade 1',     location: 'London, UK',    maxPlayers: 100, currentPlayers: 0, status: 'online' },
+        { id: 'arc2', name: 'Arcade 2',     location: 'New York, US',  maxPlayers: 100, currentPlayers: 0, status: 'online' }
+    ];
+
+    var batch = db.batch();
+    servers.forEach(function(s) {
+        var ref = db.collection('servers').doc(s.id);
+        batch.set(ref, {
+            name: s.name, location: s.location, maxPlayers: s.maxPlayers,
+            currentPlayers: s.currentPlayers, status: s.status,
+            createdAt: firebase.firestore.FieldValue.serverTimestamp()
+        });
+    });
+    return batch.commit().then(function() {
+        console.log('Servers seeded!');
+    });
+}
+
+// ==========================================
+// POPULATE DROPDOWNS FROM FIRESTORE
+// ==========================================
+
+function populateServerDropdowns() {
+    db.collection('servers').where('status', '!=', 'offline').orderBy('name').get()
+        .then(function(snap) {
+            if (snap.empty) return;
+
+            var gameSelect = document.getElementById('game-server-select');
+            if (gameSelect) {
+                gameSelect.innerHTML = '';
+                snap.forEach(function(doc) {
+                    var s = doc.data();
+                    var opt = document.createElement('option');
+                    opt.value = doc.id;
+                    opt.textContent = s.name + ' - ' + s.location;
+                    gameSelect.appendChild(opt);
+                });
+            }
+
+            var reportSelect = document.getElementById('report-server');
+            if (reportSelect) {
+                var firstOpt = reportSelect.querySelector('option');
+                reportSelect.innerHTML = '';
+                if (firstOpt) reportSelect.appendChild(firstOpt);
+                snap.forEach(function(doc) {
+                    var s = doc.data();
+                    var opt = document.createElement('option');
+                    opt.value = s.name;
+                    opt.textContent = s.name;
+                    reportSelect.appendChild(opt);
+                });
+            }
+        });
+}
+
 
 // ==========================================
 // NAVIGATION
@@ -884,6 +1054,7 @@ var navHighlightMap = {
     'my-appeals': 'nav-account-btn',
     'admin': 'nav-admin-btn',
     'admin-users': 'nav-admin-btn',
+    'admin-servers': 'nav-admin-btn',
     'admin-reports': 'nav-admin-btn',
     'admin-appeals': 'nav-admin-btn',
     'admin-logs': 'nav-admin-btn',
@@ -914,12 +1085,15 @@ function showPage(page) {
     if (page === 'my-appeals') loadMyAppeals();
     if (page === 'admin') loadAdminData();
     if (page === 'admin-users') loadAdminUsers();
+    if (page === 'admin-servers') loadAdminServers();
     if (page === 'admin-reports') loadAdminReports();
     if (page === 'admin-logs') loadAdminLogs();
     if (page === 'admin-appeals') loadAdminAppeals();
     if (page === 'community') startChatListener();
     else stopChatListener();
     if (page === 'game' && mpConnected) gameDrawMap();
+    if (page === 'game') populateServerDropdowns();
+    if (page === 'servers') { loadServers(); loadPlayerCount(); }
 }
 
 function toggleNav() {
